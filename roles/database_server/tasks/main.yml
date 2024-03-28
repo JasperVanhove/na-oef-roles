@@ -1,0 +1,17 @@
+---
+# tasks file for database_server
+- name: Install MySQL
+  ansible.builtin.package:
+    name: mysql-server
+    version: "{{ mysql_version }}"
+    state: present
+    become: yes
+
+- name: copy MySQL configuration file
+  ansible.builtin.template:
+    src: templates/my.cnf.j2
+    dest: /etc/mysql/my.cnf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart mysql
