@@ -1,0 +1,23 @@
+---
+- name: Base Server Setup
+  hosts: all
+  become: yes
+  roles:
+    - base-server-setup
+
+- name: Install Database servers
+  hosts: postgresql
+  become: yes
+  roles:
+    - { role: postgresql-install, max_connections: 150 }
+
+- name: Install Odoo Web Application
+  hosts: odoo
+  roles:
+    - { role: odoo-webapp-install, odoo_server.workers: 3, odoo_server.max_cron_threads: 3, database.name: test, database.host: 10.0.0.171 }
+
+- name: Install Nginx
+  hosts: odoo
+  become: yes
+  roles:
+    - { role: nginx-install, domain_name: odoo.network.automation.test }

@@ -1,0 +1,22 @@
+---
+# Odoo Server Configuration
+odoo_server:
+  version: 17.0
+  web_port: 8069
+  chat_port: 8072
+  addons_path: /usr/lib/python3/dist-packages/odoo/addons
+  filestore: /var/lib/odoo
+  admin_passwd: test123
+  workers: 2
+  max_cron_threads: 2
+
+# Odoo database configuration
+database:
+  major_version: 15
+  host: 10.0.0.171
+  port: 5432
+  user: odoo
+  password: odoo
+  name: odoo
+  ansible_user: ansible
+  ansible_password: ansible

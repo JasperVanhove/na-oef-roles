@@ -1,0 +1,4 @@
+---
+odoo_web_port: 8069
+odoo_chat_port: 8072
+domain_name: default.domain.com

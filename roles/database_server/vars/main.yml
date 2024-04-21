@@ -1,7 +1,0 @@
----
-# vars file for database_server
-root_user: "root"
-root_password: "root"
-database_name: "ansible"
-msql_version: "5.7"
-mysql_port: "3306"

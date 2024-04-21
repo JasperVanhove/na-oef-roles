@@ -1,0 +1,113 @@
+---
+- name: Update packages
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+    update_cache: yes
+    force_apt_get: yes
+    autoremove: yes
+    autoclean: yes
+  become: yes
+
+- name: Copy Pre-Install script to /tmp
+  ansible.builtin.template:
+    src: templates/odoo-pre-install.sh.j2
+    dest: /tmp/pre-install.sh
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0744
+
+- name: Run Pre-Install via script
+  ansible.builtin.command:
+    cmd: /tmp/pre-install.sh
+  register: pre_install_result
+
+- name: Debug Pre-requisites Installation Errors
+  ansible.builtin.debug:
+    msg: "{{ pre_install_result.stderr }}"
+  when: pre_install_result.failed == true and pre_install_result.stderr
+
+- name: Install Odoo From Package
+  ansible.builtin.apt:
+    name: odoo
+    state: present
+  become: yes
+
+- name: Test PostgreSQL Connection
+  community.postgresql.postgresql_ping:
+    db: postgres
+    login_host: "{{ database.host }}"
+    login_user: "{{ database.ansible_user }}"
+    login_password: "{{ database.ansible_password }}"
+  register: connection_test
+
+- name: Create Odoo user in PostgreSQL
+  community.postgresql.postgresql_user:
+    db: postgres
+    name: "{{ database.user }}"
+    password: "{{ database.password }}"
+    login_host: "{{ database.host }}"
+  environment:
+    PGOPTIONS: "-c password_encryption=scram-sha-256"
+
+- name: Give Odoo user database creation rights
+  community.postgresql.postgresql_privs:
+    db: postgres
+    login_host: "{{ database.host }}"
+    privs: "ALL"
+    type: schema
+    objs: public
+    roles: "{{ database.user }}"
+
+- name: Create Odoo database in PostgreSQL
+  community.postgresql.postgresql_db:
+    name: "{{ database.name }}"
+    owner: "{{ database.user }}"
+    login_host: "{{ database.host }}"
+
+- name: Copy Odoo configuration file
+  ansible.builtin.template:
+    src: templates/odoo.conf.j2
+    dest: /etc/odoo/odoo.conf
+    owner: odoo
+    group: odoo
+    mode: 0640
+  become: yes
+
+- name: Restart Odoo with new configuration
+  ansible.builtin.systemd:
+    name: odoo
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: yes
+
+- name: Check if Odoo Server is running
+  ansible.builtin.systemd:
+    name: odoo
+  register: odoo_status
+
+- name: Open Odoo ports on the firewall
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+    comment: "Odoo Server Port"
+    state: enabled
+  become: yes
+  loop:
+    - "{{ odoo_server.web_port }}"
+    - "{{ odoo_server.chat_port }}"
+    - "22"
+
+- name: Initiate Odoo Database if not exists
+  ansible.builtin.command:
+    cmd: odoo --db_host {{ database.host }} --db_port {{ database.port }} -r {{ database.user }} -w {{ database.password }} -d {{ database.name }} -i base --stop-after-init --no-xmlrpc
+  when: odoo_status.status.ActiveState == "active" and odoo_status.status.SubState == "running"
+
+- name: Check if Odoo is healthy
+  uri:
+    url: http://localhost:{{ odoo_server.web_port }}/web
+  when: odoo_status.status.ActiveState == "active" and odoo_status.status.SubState == "running"
+  register: odoo_health
+  failed_when: odoo_health is failed or odoo_health.status not in [200, 301, 302]

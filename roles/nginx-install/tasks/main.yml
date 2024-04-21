@@ -1,0 +1,39 @@
+---
+- name: Install Nginx on Odoo Server
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Copy Nginx configuration file
+  ansible.builtin.template:
+    src: templates/odoo-nginx.conf.j2
+    dest: /etc/nginx/sites-available/{{ domain_name }}
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Check Nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  register: nginx_config
+  ignore_errors: yes
+
+- name: Create symbolic link to sites-enabled
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/{{ domain_name }}
+    dest: /etc/nginx/sites-enabled/{{ domain_name }}
+    state: link
+  when: nginx_config.rc == 0
+
+- name: Open firewall for Nginx
+  community.general.ufw:
+    rule: allow
+    port: "80,443"
+    proto: tcp
+    state: enabled
+
+- name: Reload and enable Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+    enabled: yes

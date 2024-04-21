@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#########################################
+# Preparation for the Odoo Installation #
+#########################################
+
+ODOO_VERSION={{ odoo_server.version }}
+
+if [ -z "$ODOO_VERSION" ]; then
+    echo "Provide a version for Odoo in the playbook."
+    exit 1
+fi
+
+# If file /usr/share/keyrings/odoo-archive-keyring.gpg does not exists, add the repository
+if [ ! -f /usr/share/keyrings/odoo-archive-keyring.gpg ]; then
+    echo "Adding repository for Odoo version $ODOO_VERSION"
+
+  # Add the keyring for the Odoo repository
+  wget -q -O - https://nightly.odoo.com/odoo.key | sudo gpg --dearmor -o /usr/share/keyrings/odoo-archive-keyring.gpg
+fi
+
+# Add the nightly repository off Odoo
+echo "deb [signed-by=/usr/share/keyrings/odoo-archive-keyring.gpg] https://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/ ./" | sudo tee /etc/apt/sources.list.d/odoo.list
+
+# Update the package list
+sudo apt-get update -y
+
+

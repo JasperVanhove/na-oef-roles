@@ -1,0 +1,83 @@
+---
+- name: Update packages
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+    update_cache: yes
+    force_apt_get: yes
+    autoremove: yes
+    autoclean: yes
+  become: yes
+
+- name: Install Pre-requisites via script
+  ansible.builtin.script: files/postgresql-pre-requisites.sh
+
+- name: Install PostgreSQL
+  ansible.builtin.apt:
+    pkg:
+      - postgresql-{{ postgresql_version }}
+      - libpq-dev
+      - python3-psycopg2
+    state: present
+  become: yes
+
+- name: Copy pg_hba configuration file
+  ansible.builtin.copy:
+    src: files/pg_hba.conf
+    dest: /etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf
+    owner: "{{ postgresql_user }}"
+    group: "{{ postgresql_group }}"
+    mode: 0640
+  become: yes
+
+- name: Copy PostgreSQL configuration file
+  ansible.builtin.template:
+    src: templates/postgresql{{ postgresql_version }}.conf.j2
+    dest: /etc/postgresql/{{ postgresql_version }}/main/postgresql.conf
+    owner: "{{ postgresql_user }}"
+    group: "{{ postgresql_group }}"
+    mode: 0644
+  become: yes
+
+- name: Restart PostgreSQL Service
+  ansible.builtin.systemd:
+    name: postgresql
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: yes
+
+- name: ALLOW Firewall for PostgreSQL
+  community.general.ufw:
+    rule: allow
+    port: "'{{ postgresql_port }}'"
+  notify: Restart UFW
+
+- name: Test PostgreSQL Connection
+  community.postgresql.postgresql_ping:
+    db: postgres
+    login_host: "{{ ansible_host }}"
+    login_user: postgres
+  register: connection_test
+
+- name: Debug PostgreSQL Connection
+  ansible.builtin.debug:
+    msg: "PostgreSQL Server is Running and accepting connections!"
+  when: connection_test.is_available == true
+
+- name: Create generic ansible user in PostgreSQL
+  community.postgresql.postgresql_user:
+    login_host: "{{ ansible_host }}"
+    name: "{{ ansible.user }}"
+    password: "{{ ansible.password }}"
+  environment:
+    PGOPTIONS: "-c password_encryption=scram-sha-256"
+  become: yes
+  when: connection_test.is_available == true
+
+- name: Test PostgreSQL Connection with ansible user
+  community.postgresql.postgresql_ping:
+    db: postgres
+    login_host: "{{ ansible_host }}"
+    login_user: "{{ ansible.user }}"
+    login_password: "{{ ansible.password }}"

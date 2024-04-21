@@ -1,0 +1,18 @@
+---
+# Global variables
+postgresql_version: 15
+postgresql_user: postgres
+postgresql_group: postgres
+postgresql_port: 5432
+
+# PostgreSQL configuration
+postgresql_data_directory: /var/lib/postgresql/{{ postgresql_version }}/main
+max_connections: 100
+shared_buffers: 512MB
+effective_cache_size: 2GB
+maintenance_work_mem: 512MB
+
+# Users and Databases
+ansible:
+  user: ansible
+  password: ansible

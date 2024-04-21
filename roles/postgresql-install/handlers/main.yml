@@ -1,0 +1,15 @@
+---
+# handlers file for postgresql-install
+- name: Restart PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+    enabled: yes
+
+- name: Restart UFW
+  ansible.builtin.systemd:
+    name: ufw
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: yes

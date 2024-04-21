@@ -1,6 +1,0 @@
----
-- name: Install database server
-  hosts: database_server
-  become: yes
-  roles:
-    - database_server
