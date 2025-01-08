@@ -1,4 +1,0 @@
----
-# vars file for host_config
-timezone: Europe/Brussels
-hostname: "{{ inventory_hostname }}"

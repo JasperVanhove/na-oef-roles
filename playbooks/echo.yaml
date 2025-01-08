@@ -1,0 +1,25 @@
+---
+- name: Update Packages and Show System Info
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update package cache and upgrade installed packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Display hostname
+      debug:
+        msg: "The hostname of this server is {{ ansible_hostname }}"
+
+    - name: Display OS version
+      debug:
+        msg: "The operating system is {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+    - name: Display current date and time
+      command: date
+      register: current_date
+
+    - name: Show the current date and time
+      debug:
+        msg: "The current date and time is: {{ current_date.stdout }}"
