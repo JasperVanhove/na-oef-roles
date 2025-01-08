@@ -3,11 +3,6 @@
   hosts: all
   become: yes
   tasks:
-    - name: Update package cache and upgrade installed packages
-      apt:
-        update_cache: yes
-        upgrade: dist
-
     - name: Display hostname
       debug:
         msg: "The hostname of this server is {{ ansible_hostname }}"
