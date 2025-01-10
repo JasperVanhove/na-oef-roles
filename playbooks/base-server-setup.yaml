@@ -1,22 +1,25 @@
 ---
-- name: Update packages
-  ansible.builtin.apt:
-    name: "*"
-    state: latest
-    update_cache: yes
-    force_apt_get: yes
-    autoremove: yes
-    autoclean: yes
-  become: yes
+- name: Update Packages and Show System Info
+  hosts: all
+  tasks:
+    - name: Update packages
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        force_apt_get: yes
+        autoremove: yes
+        autoclean: yes
+      become: yes
 
-- name: Set hostname
-  ansible.builtin.hostname:
-    name: "ansible-test"
-  tags:
-    - hostname
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "ansible-test"
+      tags:
+        - hostname
 
-- name: Set timezone
-  ansible.builtin.timezone:
-    name: "Europe/Brussels"
-  tags:
-    - timezone
+    - name: Set timezone
+      ansible.builtin.timezone:
+        name: "Europe/Brussels"
+      tags:
+        - timezone
