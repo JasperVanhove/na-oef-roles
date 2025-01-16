@@ -13,7 +13,7 @@
         - curl
 
     - name: Run docker-essentials script
-      script: templates/docker-essentials.sh
+      script: docker-essentials.sh
 
     - name: install Docker packages
       apt:
